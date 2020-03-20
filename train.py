@@ -12,6 +12,7 @@ tf.flags.DEFINE_integer('batch_size', 1, 'batch size, default: 1')
 tf.flags.DEFINE_integer('image_size', 256, 'image size, default: 256')
 tf.flags.DEFINE_bool('use_lsgan', True,
                      'use lsgan (mean squared error) or cross entropy loss, default: True')
+tf.flags.DEFINE_string('which_model_netG','unet','default: resnet')
 tf.flags.DEFINE_string('norm', 'instance',
                        '[instance, batch] use instance norm or batch norm, default: instance')
 tf.flags.DEFINE_integer('lambda1', 10,
@@ -54,6 +55,7 @@ def train():
         batch_size=FLAGS.batch_size,
         image_size=FLAGS.image_size,
         use_lsgan=FLAGS.use_lsgan,
+        which_model_netG=FLAGS.which_model_netG,
         norm=FLAGS.norm,
         lambda1=FLAGS.lambda1,
         lambda2=FLAGS.lambda2,
@@ -86,7 +88,7 @@ def train():
       fake_Y_pool = ImagePool(FLAGS.pool_size)
       fake_X_pool = ImagePool(FLAGS.pool_size)
 
-      while not coord.should_stop():
+      while not coord.should_stop() and (step<10000):
         # get previously generated images
         fake_y_val, fake_x_val = sess.run([fake_y, fake_x])
 
@@ -112,7 +114,6 @@ def train():
         if step % 10000 == 0:
           save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
           logging.info("Model saved in file: %s" % save_path)
-
         step += 1
 
     except KeyboardInterrupt:
