@@ -80,13 +80,13 @@ class CycleGAN:
     G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan)
     G_loss =  G_gan_loss + cycle_loss
     D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan)
-    lsq_y_loss = self.mse_loss(y, self.fake_y)
+    lsq_y_loss = self.mse_loss(y, self.G(self.F(y)))
     # Y -> X
     fake_x = self.F(y)
     F_gan_loss = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan)
     F_loss = F_gan_loss + cycle_loss
     D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan)
-    lsq_x_loss = self.mse_loss(x, self.fake_x)
+    lsq_x_loss = self.mse_loss(x, self.F(self.G(x)))
     # summary
     tf.summary.histogram('D_Y/true', self.D_Y(y))
     tf.summary.histogram('D_Y/fake', self.D_Y(self.G(x)))
@@ -186,6 +186,6 @@ class CycleGAN:
     backward_loss = tf.reduce_mean(tf.abs(G(F(y))-y))
     loss = self.lambda1*forward_loss + self.lambda2*backward_loss
     return loss
-  def mse_loss(self, real, fake):
+  def mse_loss(self, real, recon):
     # computing the mse betw fake and real image values
-    return tf.reduce_mean(tf.squared_difference(real,fake))
+    return tf.reduce_mean(tf.squared_difference(real,recon))
