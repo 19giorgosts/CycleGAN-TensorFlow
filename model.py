@@ -5,7 +5,6 @@ from reader import Reader
 from discriminator import Discriminator
 from generator import Generator
 from tensorflow_examples.models.pix2pix import pix2pix
-
 REAL_LABEL = 0.9
 
 class CycleGAN:

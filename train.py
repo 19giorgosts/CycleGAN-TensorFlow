@@ -5,6 +5,8 @@ from datetime import datetime
 import os
 import logging
 from utils import ImagePool
+#ignoring possible errors/warnings
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 FLAGS = tf.flags.FLAGS
 
