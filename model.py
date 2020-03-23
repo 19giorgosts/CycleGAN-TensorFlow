@@ -2,19 +2,19 @@ import tensorflow as tf
 import ops
 import utils
 from reader import Reader
-from generator import ResNetGenerator
-from generator import UNetGenerator
 from discriminator import Discriminator
+from generator import Generator
+from tensorflow_examples.models.pix2pix import pix2pix
+
 REAL_LABEL = 0.9
 
 class CycleGAN:
   def __init__(self,
-               X_train_file,
-               Y_train_file,
-               batch_size,
-               image_size,
-               use_lsgan,
-               which_model_netG,
+               X_train_file='',
+               Y_train_file='',
+               batch_size=1,
+               image_size=256,
+               use_lsgan=True,
                norm='instance',
                lambda1=10,
                lambda2=10,
@@ -40,7 +40,7 @@ class CycleGAN:
     self.lambda2 = lambda2
     self.use_lsgan = use_lsgan
     use_sigmoid = not use_lsgan
-    self.batch_size = batch_size
+    self.BATCH_SIZE = batch_size
     self.image_size = image_size
     self.learning_rate = learning_rate
     self.beta1 = beta1
@@ -48,24 +48,15 @@ class CycleGAN:
     self.Y_train_file = Y_train_file
 
     self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
+    
+    self.G = pix2pix.unet_generator(3, norm_type='instancenorm')
 
-    if which_model_netG=='resnet':
-      self.G = ResNetGenerator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-      self.F = ResNetGenerator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-    if which_model_netG=='resnet3d':
-      self.G = ResNet3DGenerator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-      self.F = ResNet3DGenerator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-    elif which_model_netG=='unet':
-      self.G = UNetGenerator('G', self.is_training, ngf=ngf, norm=norm, batch_size=1, image_size=image_size)
-      self.F = UNetGenerator('F', self.is_training, ngf=ngf, norm=norm, batch_size=1, image_size=image_size)
-    elif which_model_netG=='unet3d':
-      self.G = UNet3DGenerator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-      self.F = UNet3DGenerator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
-    else:
-      print("Wrong option...")
-
+    #self.G = Generator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_Y = Discriminator('D_Y',
         self.is_training, norm=norm, use_sigmoid=use_sigmoid)
+
+    self.F = pix2pix.unet_generator(3, norm_type='instancenorm')
+    #self.F = Generator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_X = Discriminator('D_X',
         self.is_training, norm=norm, use_sigmoid=use_sigmoid)
 
@@ -76,9 +67,9 @@ class CycleGAN:
 
   def model(self):
     X_reader = Reader(self.X_train_file, name='X',
-        image_size=self.image_size, batch_size=self.batch_size)
+        image_size=self.image_size, batch_size=self.BATCH_SIZE)
     Y_reader = Reader(self.Y_train_file, name='Y',
-        image_size=self.image_size, batch_size=self.batch_size)
+        image_size=self.image_size, batch_size=self.BATCH_SIZE)
 
     x = X_reader.feed()
     y = Y_reader.feed()
@@ -124,10 +115,9 @@ class CycleGAN:
       global_step = tf.Variable(0, trainable=False)
       starter_learning_rate = self.learning_rate
       end_learning_rate = 0.0
-      start_decay_step = 100000
-      decay_steps = 100000
+      start_decay_step = 50000
+      decay_steps = 50000
       beta1 = self.beta1
-      learning_rate=starter_learning_rate
       learning_rate = (
           tf.where(
                   tf.greater_equal(global_step, start_decay_step),
