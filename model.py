@@ -81,18 +81,22 @@ class CycleGAN:
     G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan)
     G_loss =  G_gan_loss + cycle_loss
     D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan)
-
+    lsq_y = tf.squared_difference(y, fake_y)
     # Y -> X
     fake_x = self.F(y)
     F_gan_loss = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan)
     F_loss = F_gan_loss + cycle_loss
     D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan)
-
+    lsq_x = tf.squared_difference(x, fake_x)
     # summary
     tf.summary.histogram('D_Y/true', self.D_Y(y))
     tf.summary.histogram('D_Y/fake', self.D_Y(self.G(x)))
     tf.summary.histogram('D_X/true', self.D_X(x))
     tf.summary.histogram('D_X/fake', self.D_X(self.F(y)))
+
+
+    tf.summary.scalar('loss/lsq_x', lsq_x_loss)
+    tf.summary.scalar('loss/lsq_y', lsq_y_loss)
 
     tf.summary.scalar('loss/G', G_gan_loss)
     tf.summary.scalar('loss/D_Y', D_Y_loss)
