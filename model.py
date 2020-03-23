@@ -12,9 +12,9 @@ class CycleGAN:
   def __init__(self,
                X_train_file='',
                Y_train_file='',
+               use_lsgan,
                batch_size=1,
                image_size=256,
-               use_lsgan=True,
                norm='instance',
                lambda1=10,
                lambda2=10,
@@ -144,7 +144,7 @@ class CycleGAN:
     with tf.control_dependencies([G_optimizer, D_Y_optimizer, F_optimizer, D_X_optimizer]):
       return tf.no_op(name='optimizers')
 
-  def discriminator_loss(self, D, y, fake_y, use_lsgan=True):
+  def discriminator_loss(self, D, y, fake_y, use_lsgan):
     """ Note: default: D(y).shape == (batch_size,5,5,1),
                        fake_buffer_size=50, batch_size=1
     Args:
@@ -165,7 +165,7 @@ class CycleGAN:
     loss = (error_real + error_fake) / 2
     return loss
 
-  def generator_loss(self, D, fake_y, use_lsgan=True):
+  def generator_loss(self, D, fake_y, use_lsgan):
     """  fool discriminator into believing that G(x) is real
     """
     if use_lsgan:
