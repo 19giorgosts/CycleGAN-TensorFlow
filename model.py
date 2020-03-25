@@ -77,6 +77,7 @@ class CycleGAN:
     #print(type(self.G),type(self.F))
     # X -> Y
     fake_y = self.G(x)
+    print(fake_y.dtype)
     G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan)
     G_loss =  G_gan_loss + cycle_loss
     D_Y_loss = self.discriminator_loss(self.D_Y, y, fake_y, use_lsgan=self.use_lsgan)
@@ -103,9 +104,9 @@ class CycleGAN:
     tf.summary.scalar('loss/D_X', D_X_loss)
     tf.summary.scalar('loss/cycle', cycle_loss)
 
-    tf.summary.image('X/generated', utils.batch_convert2int(self.G(x)))
+    tf.summary.image('X/generated', utils.batch_convert2int(fake_y))
     tf.summary.image('X/reconstruction', utils.batch_convert2int(self.F(self.G(x))))
-    tf.summary.image('Y/generated', utils.batch_convert2int(self.F(y)))
+    tf.summary.image('Y/generated', utils.batch_convert2int(fake_x))
     tf.summary.image('Y/reconstruction', utils.batch_convert2int(self.G(self.F(y))))
 
     return G_loss, D_Y_loss, F_loss, D_X_loss, fake_y, fake_x
