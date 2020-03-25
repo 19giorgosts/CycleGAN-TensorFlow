@@ -32,7 +32,6 @@ class Discriminator:
       # use_sigmoid = False if use_lsgan = True
       output = ops.last_conv(C512, reuse=self.reuse,
           use_sigmoid=self.use_sigmoid, name='output')          # (?, w/16, h/16, 1)
-
     self.reuse = True
     self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
 

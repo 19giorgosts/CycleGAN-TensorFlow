@@ -90,14 +90,12 @@ def train():
 
       while not coord.should_stop():
         # get previously generated images
-        fake_y_val, fake_x_val = sess.run([fake_y, fake_x])
+        #fake_y_val, fake_x_val = sess.run([fake_y, fake_x])
 
         # train
         _, G_loss_val, D_Y_loss_val, F_loss_val, D_X_loss_val, summary = (
               sess.run(
-                  [optimizers, G_loss, D_Y_loss, F_loss, D_X_loss, summary_op],
-                  feed_dict={cycle_gan.fake_y: fake_Y_pool.query(fake_y_val),
-                             cycle_gan.fake_x: fake_X_pool.query(fake_x_val)}
+                  [optimizers, G_loss, D_Y_loss, F_loss, D_X_loss, summary_op]
               )
         )
 

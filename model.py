@@ -53,7 +53,7 @@ class CycleGAN:
     #self.G = Generator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_Y = Discriminator('D_Y',
         self.is_training, norm=norm, use_sigmoid=use_sigmoid)
-
+    
     self.F = pix2pix.unet_generator(3, norm_type='instancenorm')
     #self.F = Generator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_X = Discriminator('D_X',
@@ -74,18 +74,18 @@ class CycleGAN:
     y = Y_reader.feed()
 
     cycle_loss = self.cycle_consistency_loss(self.G, self.F, x, y)
-
+    #print(type(self.G),type(self.F))
     # X -> Y
     fake_y = self.G(x)
     G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan)
     G_loss =  G_gan_loss + cycle_loss
-    D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan)
+    D_Y_loss = self.discriminator_loss(self.D_Y, y, fake_y, use_lsgan=self.use_lsgan)
     lsq_y_loss = self.mse_loss(y, self.G(self.F(y)))
     # Y -> X
     fake_x = self.F(y)
     F_gan_loss = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan)
     F_loss = F_gan_loss + cycle_loss
-    D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan)
+    D_X_loss = self.discriminator_loss(self.D_X, x, fake_x, use_lsgan=self.use_lsgan)
     lsq_x_loss = self.mse_loss(x, self.F(self.G(x)))
     # summary
     tf.summary.histogram('D_Y/true', self.D_Y(y))
