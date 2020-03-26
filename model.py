@@ -1,10 +1,15 @@
 import tensorflow as tf
 import ops
 import utils
+import numpy as np
 from reader import Reader
 from discriminator import Discriminator
-from generator import Generator
-from tensorflow_examples.models.pix2pix import pix2pix
+from generator import UnetGenerator
+#from tensorflow_examples.models.pix2pix import pix2pix
+from matplotlib.image import imread 
+from pix2pix import *
+from PIL import Image
+
 REAL_LABEL = 0.9
 
 class CycleGAN:
@@ -48,14 +53,14 @@ class CycleGAN:
 
     self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
     
-    self.G = pix2pix.unet_generator(3, norm_type='instancenorm')
+    #self.G = unet_generator(3, norm_type='instancenorm')
 
-    #self.G = Generator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
+    self.G = UnetGenerator('G', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_Y = Discriminator('D_Y',
         self.is_training, norm=norm, use_sigmoid=use_sigmoid)
     
-    self.F = pix2pix.unet_generator(3, norm_type='instancenorm')
-    #self.F = Generator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
+    #self.F = unet_generator(3, norm_type='instancenorm')
+    self.F = UnetGenerator('F', self.is_training, ngf=ngf, norm=norm, image_size=image_size)
     self.D_X = Discriminator('D_X',
         self.is_training, norm=norm, use_sigmoid=use_sigmoid)
 
@@ -77,16 +82,17 @@ class CycleGAN:
     #print(type(self.G),type(self.F))
     # X -> Y
     fake_y = self.G(x)
-    print(fake_y.dtype)
+    print(fake_y)
     G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan)
     G_loss =  G_gan_loss + cycle_loss
-    D_Y_loss = self.discriminator_loss(self.D_Y, y, fake_y, use_lsgan=self.use_lsgan)
+    D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan)
     lsq_y_loss = self.mse_loss(y, self.G(self.F(y)))
     # Y -> X
-    fake_x = self.F(y)
+    #fake_x = self.F(y)
+    fake_x = self.phys(y)
     F_gan_loss = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan)
     F_loss = F_gan_loss + cycle_loss
-    D_X_loss = self.discriminator_loss(self.D_X, x, fake_x, use_lsgan=self.use_lsgan)
+    D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan)
     lsq_x_loss = self.mse_loss(x, self.F(self.G(x)))
     # summary
     tf.summary.histogram('D_Y/true', self.D_Y(y))
@@ -104,12 +110,14 @@ class CycleGAN:
     tf.summary.scalar('loss/D_X', D_X_loss)
     tf.summary.scalar('loss/cycle', cycle_loss)
 
-    tf.summary.image('X/generated', utils.batch_convert2int(fake_y))
+    tf.summary.image('X/generated', utils.batch_convert2int(self.G(x)))
     tf.summary.image('X/reconstruction', utils.batch_convert2int(self.F(self.G(x))))
-    tf.summary.image('Y/generated', utils.batch_convert2int(fake_x))
+    tf.summary.image('Y/generated', utils.batch_convert2int(self.F(y)))
     tf.summary.image('Y/reconstruction', utils.batch_convert2int(self.G(self.F(y))))
 
     return G_loss, D_Y_loss, F_loss, D_X_loss, fake_y, fake_x
+
+#...
 
   def optimize(self, G_loss, D_Y_loss, F_loss, D_X_loss):
     def make_optimizer(loss, variables, name='Adam'):
@@ -147,6 +155,16 @@ class CycleGAN:
 
     with tf.control_dependencies([G_optimizer, D_Y_optimizer, F_optimizer, D_X_optimizer]):
       return tf.no_op(name='optimizers')
+
+  def phys(self,img):
+    #return tf.image.adjust_brightness(img,delta=0.6)
+    kernel = Image.open('kernel.jpg')
+    # Loading test image from the local filesystem 
+    kernel = tf.Variable(imread("kernel.jpg"),dtype='float32')
+    res = tf.multiply(kernel,img)
+    return res
+
+
 
   def discriminator_loss(self, D, y, fake_y, use_lsgan):
     """ Note: default: D(y).shape == (batch_size,5,5,1),
@@ -187,6 +205,7 @@ class CycleGAN:
     backward_loss = tf.reduce_mean(tf.abs(G(F(y))-y))
     loss = self.lambda1*forward_loss + self.lambda2*backward_loss
     return loss
+
   def mse_loss(self, real, recon):
     # computing the mse betw fake and real image values
     return tf.reduce_mean(tf.squared_difference(real,recon))
