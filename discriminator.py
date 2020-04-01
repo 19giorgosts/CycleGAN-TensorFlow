@@ -8,6 +8,7 @@ class Discriminator:
     self.norm = norm
     self.reuse = False
     self.use_sigmoid = use_sigmoid
+    #print("use_sigmoid",use_sigmoid)
 
   def __call__(self, input):
     """

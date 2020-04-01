@@ -200,7 +200,6 @@ def downsample(filters, size, norm_type='batchnorm', apply_norm=True):
     Downsample Sequential Model
   """
   initializer = tf.random_normal_initializer(0., 0.02)
-
   result = tf.keras.Sequential()
   result.add(
       tf.keras.layers.Conv2D(filters, size, strides=2, padding='same',
@@ -267,11 +266,11 @@ def unet_generator(output_channels, norm_type='batchnorm'):
 
   down_stack = [
       downsample(64, 4, norm_type, apply_norm=False),  # (bs, 128, 128, 64)
-      downsample(64, 4, norm_type),  # (bs, 64, 64, 128)
-      downsample(128, 4, norm_type),  # (bs, 32, 32, 256)
-      downsample(128, 4, norm_type),  # (bs, 16, 16, 512)
-      downsample(256, 4, norm_type),  # (bs, 8, 8, 512)
-      downsample(256, 4, norm_type),  # (bs, 4, 4, 512)
+      downsample(128, 4, norm_type),  # (bs, 64, 64, 128)
+      downsample(256, 4, norm_type),  # (bs, 32, 32, 256)
+      downsample(512, 4, norm_type),  # (bs, 16, 16, 512)
+      downsample(512, 4, norm_type),  # (bs, 8, 8, 512)
+      downsample(512, 4, norm_type),  # (bs, 4, 4, 512)
       downsample(512, 4, norm_type),  # (bs, 2, 2, 512)
       downsample(512, 4, norm_type),  # (bs, 1, 1, 512)
   ]
@@ -279,9 +278,9 @@ def unet_generator(output_channels, norm_type='batchnorm'):
   up_stack = [
       upsample(512, 4, norm_type, apply_dropout=True),  # (bs, 2, 2, 1024)
       upsample(512, 4, norm_type, apply_dropout=True),  # (bs, 4, 4, 1024)
-      upsample(256, 4, norm_type, apply_dropout=True),  # (bs, 8, 8, 1024)
-      upsample(256, 4, norm_type),  # (bs, 16, 16, 1024)
-      upsample(128, 4, norm_type),  # (bs, 32, 32, 512)
+      upsample(512, 4, norm_type, apply_dropout=True),  # (bs, 8, 8, 1024)
+      upsample(512, 4, norm_type),  # (bs, 16, 16, 1024)
+      upsample(256, 4, norm_type),  # (bs, 32, 32, 512)
       upsample(128, 4, norm_type),  # (bs, 64, 64, 256)
       upsample(64, 4, norm_type),  # (bs, 128, 128, 128)
   ]
@@ -308,6 +307,7 @@ def unet_generator(output_channels, norm_type='batchnorm'):
   # Upsampling and establishing the skip connections
   for up, skip in zip(up_stack, skips):
     x = up(x)
+    print(x.shape)
     x = concat([x, skip])
 
   x = last(x)
